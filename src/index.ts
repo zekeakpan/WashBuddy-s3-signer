@@ -1,7 +1,11 @@
 import cors from "cors";
+import dotenv from "dotenv";
 import express, { Request, RequestHandler, Response } from "express";
+import jwt from "jsonwebtoken";
 import { generateBlurhashFromS3Image } from "./genBlurhash";
 import generateUploadURL from "./s3";
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -22,6 +26,14 @@ app.use(
 );
 
 app.get("/generate-url", (async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Missing or invalid token" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
   const { filename, contentType } = req.query;
 
   if (typeof filename !== "string" || typeof contentType !== "string") {
@@ -29,6 +41,12 @@ app.get("/generate-url", (async (req: Request, res: Response) => {
   }
 
   try {
+    const decoded = jwt.verify(
+      token,
+      process.env.SUPABASE_JWT_SECRET as string
+    );
+    console.log("🔑 Decoded token:", decoded);
+
     const url = await generateUploadURL(filename, contentType);
     res.send({ url });
   } catch (err) {
