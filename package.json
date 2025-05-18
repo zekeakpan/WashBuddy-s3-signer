@@ -5,13 +5,15 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
-    "start": "ts-node src/index.ts"
+    "build": "tsc",
+    "start": "node dist/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/node": "^22.15.18",
     "aws-sdk": "^2.1692.0",
     "axios": "^1.8.4",
     "blurhash": "^2.0.5",
@@ -26,6 +28,6 @@
     "dotenv": "^16.4.7",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }
