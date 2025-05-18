@@ -1,0 +1,62 @@
+import cors from "cors";
+import express, { Request, RequestHandler, Response } from "express";
+import { generateBlurhashFromS3Image } from "./genBlurhash";
+import generateUploadURL from "./s3";
+
+const app = express();
+app.use(cors());
+
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+app.use(express.json());
+
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
+
+app.get("/generate-url", (async (req: Request, res: Response) => {
+  const { filename, contentType } = req.query;
+
+  if (typeof filename !== "string" || typeof contentType !== "string") {
+    return res.status(400).json({ error: "Invalid query parameters" });
+  }
+
+  try {
+    const url = await generateUploadURL(filename, contentType);
+    res.send({ url });
+  } catch (err) {
+    console.error("Error generating signed URL:", err);
+    res.status(500).send({ error: "Failed to generate URL" });
+  }
+}) as RequestHandler);
+
+app.post("/generate-blurhash", (async (req: Request, res: Response) => {
+  const { imageUrl } = req.body;
+
+  console.log("🌀 Received request to generate blurhash");
+  console.log("Image URL:", imageUrl);
+
+  if (!imageUrl || typeof imageUrl !== "string") {
+    res.status(400).json({ error: "Invalid or missing imageUrl" });
+    return;
+  }
+
+  try {
+    const blurhash = await generateBlurhashFromS3Image(imageUrl);
+    console.log("✅ Blurhash generated:", blurhash);
+    return res.json({ blurhash });
+  } catch (error) {
+    console.error("❌ Failed to generate blurhash:", error);
+    res.status(500).json({ error: "Could not generate blurhash" });
+  }
+}) as RequestHandler);
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log("🚀 Server running on port 4000"));
