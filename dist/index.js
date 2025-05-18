@@ -13,9 +13,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const cors_1 = __importDefault(require("cors"));
+const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const createUser_1 = require("./createUser");
 const genBlurhash_1 = require("./genBlurhash");
+const groqResponses_1 = require("./groqResponses");
 const s3_1 = __importDefault(require("./s3"));
+dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use((req, res, next) => {
@@ -29,11 +34,18 @@ app.use((0, cors_1.default)({
     allowedHeaders: ["Content-Type"],
 }));
 app.get("/generate-url", ((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const authHeader = req.headers.authorization;
+    if (!(authHeader === null || authHeader === void 0 ? void 0 : authHeader.startsWith("Bearer "))) {
+        return res.status(401).json({ error: "Missing or invalid token" });
+    }
+    const token = authHeader.split(" ")[1];
     const { filename, contentType } = req.query;
     if (typeof filename !== "string" || typeof contentType !== "string") {
         return res.status(400).json({ error: "Invalid query parameters" });
     }
     try {
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.SUPABASE_JWT_SECRET);
+        console.log("🔑 Decoded token:", decoded);
         const url = yield (0, s3_1.default)(filename, contentType);
         res.send({ url });
     }
@@ -58,6 +70,51 @@ app.post("/generate-blurhash", ((req, res) => __awaiter(void 0, void 0, void 0, 
     catch (error) {
         console.error("❌ Failed to generate blurhash:", error);
         res.status(500).json({ error: "Could not generate blurhash" });
+    }
+})));
+app.post("/create-user", ((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const authHeader = req.headers.authorization;
+    if (!(authHeader === null || authHeader === void 0 ? void 0 : authHeader.startsWith("Bearer "))) {
+        return res.status(401).json({ error: "Missing or invalid token" });
+    }
+    const token = authHeader.split(" ")[1];
+    const { valid } = (0, createUser_1.verifyUserRole)(token);
+    if (!valid) {
+        return res.status(401).json({ error: "Access denied.  Unauthorized role" });
+    }
+    const { email, phoneNumber, role: userRole } = req.body;
+    try {
+        const { data, error } = yield (0, createUser_1.createUser)(email, phoneNumber, userRole);
+        if (error) {
+            res.status(500).json({ error: "Failed to create user" });
+        }
+        else {
+            res.json({ userId: (_a = data === null || data === void 0 ? void 0 : data.user) === null || _a === void 0 ? void 0 : _a.id });
+        }
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to create user" });
+    }
+})));
+app.post("/get-groq-response", ((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { prompt } = req.body;
+    const authHeader = req.headers.authorization;
+    if (!(authHeader === null || authHeader === void 0 ? void 0 : authHeader.startsWith("Bearer "))) {
+        return res.status(401).json({ error: "Missing or invalid token" });
+    }
+    const token = authHeader.split(" ")[1];
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.SUPABASE_JWT_SECRET);
+        console.log("🔑 Decoded token:", decoded);
+        if (!decoded) {
+            return res.status(401).json({ error: "Invalid token" });
+        }
+        const response = yield (0, groqResponses_1.getGroqResponses)(prompt);
+        res.json({ response });
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to get Groq response" });
     }
 })));
 const PORT = process.env.PORT || 4000;

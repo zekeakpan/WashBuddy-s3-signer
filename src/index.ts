@@ -4,6 +4,7 @@ import express, { Request, RequestHandler, Response } from "express";
 import jwt from "jsonwebtoken";
 import { createUser, verifyUserRole } from "./createUser";
 import { generateBlurhashFromS3Image } from "./genBlurhash";
+import { getGroqResponses } from "./groqResponses";
 import generateUploadURL from "./s3";
 
 dotenv.config();
@@ -101,6 +102,32 @@ app.post("/create-user", (async (req: Request, res: Response) => {
     }
   } catch (error) {
     res.status(500).json({ error: "Failed to create user" });
+  }
+}) as RequestHandler);
+
+app.post("/get-groq-response", (async (req: Request, res: Response) => {
+  const { prompt } = req.body;
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Missing or invalid token" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.SUPABASE_JWT_SECRET as string
+    );
+    console.log("🔑 Decoded token:", decoded);
+    if (!decoded) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+    const response = await getGroqResponses(prompt);
+    res.json({ response });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get Groq response" });
   }
 }) as RequestHandler);
 
