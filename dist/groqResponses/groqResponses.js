@@ -18,8 +18,8 @@ dotenv_1.default.config();
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const getGroqResponses = (prompt) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
-    const GROK_API_KEY = process.env.GROK_API_KEY;
-    if (!GROK_API_KEY) {
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+    if (!GROQ_API_KEY) {
         throw new Error("GROK_API_KEY is not set");
     }
     try {
@@ -27,7 +27,7 @@ const getGroqResponses = (prompt) => __awaiter(void 0, void 0, void 0, function*
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${GROK_API_KEY}`,
+                Authorization: `Bearer ${GROQ_API_KEY}`,
             },
             body: JSON.stringify({
                 model: "llama3-8b-8192",
@@ -42,6 +42,7 @@ const getGroqResponses = (prompt) => __awaiter(void 0, void 0, void 0, function*
             }),
         });
         const data = yield res.json();
+        console.log("groq response", data);
         return ((_d = (_c = (_b = (_a = data.choices) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.message) === null || _c === void 0 ? void 0 : _c.content) !== null && _d !== void 0 ? _d : "Will connect you to a human agent right away.");
     }
     catch (error) {

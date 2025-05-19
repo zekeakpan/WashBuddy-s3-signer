@@ -13,45 +13,15 @@ const verifyUserRole = (
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const role = (decoded as { role: string }).role || null;
+    const role = (decoded as { user_role: string }).user_role || null;
     if (role === "admin" || role === "agent" || role === "user") {
       return { valid: true, role };
     }
+    console.log("User role", role);
     return { valid: false, role: null };
   } catch (error) {
     console.error("JWT verification failed:", error);
     return { valid: false, role: null };
-  }
-};
-
-export const verifyTokens = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const bearer = req.headers?.authorization;
-
-  if (!bearer || !bearer.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  const token = bearer.split(" ")[1];
-
-  const { valid } = verifyUserRole(token);
-  if (!valid) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-  try {
-    const { valid, role } = verifyUserRole(token);
-    if (!valid || !role) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-    req.user = { role };
-    next();
-  } catch (err) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
   }
 };
 

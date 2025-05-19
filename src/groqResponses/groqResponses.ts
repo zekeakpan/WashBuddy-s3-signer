@@ -6,8 +6,8 @@ dotenv.config();
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const getGroqResponses = async (prompt: string) => {
-  const GROK_API_KEY = process.env.GROK_API_KEY;
-  if (!GROK_API_KEY) {
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_API_KEY) {
     throw new Error("GROK_API_KEY is not set");
   }
   try {
@@ -15,7 +15,7 @@ const getGroqResponses = async (prompt: string) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${GROK_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
         model: "llama3-8b-8192",
@@ -32,6 +32,7 @@ const getGroqResponses = async (prompt: string) => {
     });
 
     const data = await res.json();
+    console.log("groq response", data);
     return (
       data.choices?.[0]?.message?.content ??
       "Will connect you to a human agent right away."

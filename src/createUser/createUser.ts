@@ -1,19 +1,35 @@
 import { Request, Response } from "express";
 import { supabase } from "../config/supabase";
-export const createUser = async (
-  email: string,
-  phoneNumber: string,
-  role: string | null = null
-) => {
+
+export const createUser = async (userData: AgentData) => {
   try {
     const { data, error } = await supabase.auth.admin.createUser({
-      email: email,
-      password: phoneNumber,
-      user_metadata: { role: role, phone: phoneNumber },
+      email: userData.email,
+      password: userData.phoneNumber,
+      user_metadata: { role: userData.role, phone: userData.phoneNumber },
       email_confirm: true,
     });
 
-    return { data, error };
+    if (error) {
+      return { error: error };
+    }
+
+    const { error: agentCreationError } = await supabase.from("agents").insert({
+      id: data?.user?.id,
+      full_name: userData.name,
+      email: userData.email,
+      phone_number: userData.phoneNumber,
+      address: userData.address,
+      date_of_birth: userData.dateOfBirth,
+      role: userData.role,
+      profile_picture_url: userData.imagePubId,
+    });
+
+    if (agentCreationError) {
+      return { data: null, error: agentCreationError };
+    }
+
+    return { data };
   } catch (error) {
     console.error(error);
     return { data: null, error: error };
@@ -32,9 +48,9 @@ export const createUserOnSupabase = async (req: Request, res: Response) => {
     return;
   }
 
-  const { email, phoneNumber, role } = req.body;
+  const userData = req.body;
   try {
-    const { data, error } = await createUser(email, phoneNumber, role);
+    const { data, error } = await createUser(userData);
     if (error) {
       res.status(500).json({ error: error });
       return;
