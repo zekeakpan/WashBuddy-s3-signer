@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const bookPlans_1 = require("../book/bookPlans");
+const createUser_1 = require("../createUser/createUser");
+const registration_1 = require("../createUser/registration");
+const genBlurhash_1 = require("../genBlurhash/genBlurhash");
+const groqResponses_1 = require("../groqResponses/groqResponses");
+const s3_1 = require("../s3/s3");
+const router = express_1.default.Router();
+router.get("/generate-url", s3_1.generateSignedURL);
+router.post("/book-plans", bookPlans_1.bookPlans);
+router.post("/generate-blurhash", genBlurhash_1.generateBlurhashFromLocalImage);
+router.post("/create-user", createUser_1.createUserOnSupabase);
+router.post("/add-user", registration_1.saveUserToSupabase);
+router.post("/get-groq-response", groqResponses_1.getGroqResponse);
+exports.default = router;

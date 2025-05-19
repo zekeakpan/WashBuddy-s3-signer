@@ -1,14 +1,17 @@
 import dotenv from "dotenv";
+import { Request, Response } from "express";
 
 dotenv.config();
 
-export const getGroqResponses = async (prompt: string) => {
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+const getGroqResponses = async (prompt: string) => {
   const GROK_API_KEY = process.env.GROK_API_KEY;
   if (!GROK_API_KEY) {
     throw new Error("GROK_API_KEY is not set");
   }
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch(GROQ_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -36,5 +39,23 @@ export const getGroqResponses = async (prompt: string) => {
   } catch (error) {
     console.error(error);
     return "Will connect you to a human agent right away.";
+  }
+};
+
+export const getGroqResponse = async (req: Request, res: Response) => {
+  const { prompt } = req.body;
+
+  if (!prompt) {
+    res.status(400).json({ error: "Prompt is required" });
+    return;
+  }
+
+  try {
+    const response = await getGroqResponses(prompt);
+    res.json({ response });
+    return;
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get Groq response" });
+    return;
   }
 };
